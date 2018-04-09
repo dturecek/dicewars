@@ -217,6 +217,7 @@ class Score(QWidget):
         for i, p in self.game.players.items():
             player_score_rect = QRectF(rect.x() + (i-1)%4*size + 5, 30 + rect.y() + ((i-1)//4) * size,
                                       size - 10, size - 10)
+            reserve_rect = QRectF(player_score_rect.x() + 40, player_score_rect.y() + 40, 20, 20)
 
             self.qp.save()
             if p == self.game.current_player:
@@ -231,6 +232,9 @@ class Score(QWidget):
             self.qp.setPen(self.color)
             self.qp.setFont(self.font)
             self.qp.drawText(player_score_rect, Qt.AlignCenter, str(p.get_score()))
+            self.qp.setFont(QFont('Helvetica', 8))
+            self.qp.drawText(reserve_rect, Qt.AlignCenter, str(p.get_reserve()))
+
 
 class StatusArea(QWidget):
     def __init__(self, game):
