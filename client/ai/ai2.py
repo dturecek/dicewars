@@ -2,7 +2,14 @@ from random import shuffle
 
 from ai import GenericAI
 
+
 class AI(GenericAI):
+    """Strength difference checking.
+
+    This AI prefers moves with the highest possible difference of strength when
+    chosing territories to attack. It passes when no moves are found with strength
+    difference of at least 0.
+    """
     def __init__(self, game, verbose):
         super(AI, self).__init__(game, verbose)
         self.ai_version = 2

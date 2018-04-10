@@ -2,7 +2,12 @@ from random import shuffle
 
 from ai import GenericAI
 
+
 class AI(GenericAI):
+    """Naive random player.
+
+    This AI does all possible moves in random order.
+    """
     def __init__(self, game, verbose):
         super(AI, self).__init__(game, verbose)
         self.ai_version = 1

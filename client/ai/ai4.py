@@ -3,7 +3,16 @@ from random import shuffle
 from ai import GenericAI
 from ai.utils import attack_succcess_probability
 
+
 class AI(GenericAI):
+    """Single turn expectiminimax.
+
+    When chosing a move, this AI prefers such that has the highest probability
+    to conquer and hold a territory through next player's turn.
+
+    If no move with this probability higher than 20% can be made, it attacks
+    from a territory with strength of 8, if possible. 
+    """
     def __init__(self, game, verbose):
         super(AI, self).__init__(game, verbose)
         self.ai_version = 4

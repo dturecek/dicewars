@@ -3,7 +3,13 @@ from random import shuffle
 from ai import GenericAI
 from ai.utils import attack_succcess_probability
 
+
 class AI(GenericAI):
+    """Single turn expectiminimax v0.
+
+    This AI checks the probability of attack and then the probability to hold
+    a territory through next player's turn.
+    """
     def __init__(self, game, verbose):
         super(AI, self).__init__(game, verbose)
         self.ai_version = 3
