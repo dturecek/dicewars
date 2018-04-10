@@ -1,3 +1,26 @@
+def probability_of_holding_area(board, area_name, area_dice, player_name):
+    area = board.get_area(area_name)
+    probability = 1.0
+    for adj in area.get_adjacent_areas(board):
+        adjacent_area = board.get_area(adj)
+        if adjacent_area.get_owner_name() != player_name:
+            enemy_dice = adjacent_area.get_dice()
+            if enemy_dice is 1:
+                continue
+            lose_prob = attack_succcess_probability(enemy_dice, area_dice)
+            hold_prob = 1.0 - lose_prob
+            probability *= hold_prob
+    return probability
+
+
+def probability_of_successful_attack(board, atk_area, target_area):
+    atk = board.get_area(atk_area)
+    target = board.get_area(target_area)
+    atk_power = atk.get_dice()
+    def_power = target.get_dice()
+    return attack_succcess_probability(atk_power, def_power)
+
+
 def attack_succcess_probability(atk, df):
     return {
         2: {

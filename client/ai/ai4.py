@@ -1,7 +1,7 @@
 from random import shuffle
 
 from ai import GenericAI
-from ai.utils import attack_succcess_probability
+from ai.utils import attack_succcess_probability, probability_of_holding_area, probability_of_successful_attack
 
 
 class AI(GenericAI):
@@ -11,7 +11,7 @@ class AI(GenericAI):
     to conquer and hold a territory through next player's turn.
 
     If no move with this probability higher than 20% can be made, it attacks
-    from a territory with strength of 8, if possible. 
+    from a territory with strength of 8, if possible.
     """
     def __init__(self, game, verbose):
         super(AI, self).__init__(game, verbose)
@@ -47,30 +47,11 @@ class AI(GenericAI):
                     adjacent_area = self.board.get_area(adj)
                     if adjacent_area.get_owner_name() != self.player_name:
                         atk_power = area.get_dice()
-                        atk_prob = self.probability_of_successful_attack(area.get_name(), adj)
-                        hold_prob = atk_prob * self.probability_of_holding_area(adj, atk_power - 1)
+                        atk_prob = probability_of_successful_attack(self.board, area.get_name(), adj)
+                        hold_prob = atk_prob * probability_of_holding_area(self.board,
+                                                    adj, atk_power - 1,
+                                                    self.player_name)
                         if hold_prob >= 0.2 or atk_power is 8:
                             turns.append([area.get_name(), adj, hold_prob])
 
         return sorted(turns, key=lambda turn: turn[2], reverse=True)
-
-    def probability_of_holding_area(self, area_name, area_dice):
-        area = self.board.get_area(area_name)
-        probability = 1.0
-        for adj in area.get_adjacent_areas(self.board):
-            adjacent_area = self.board.get_area(adj)
-            if adjacent_area.get_owner_name() != self.player_name:
-                enemy_dice = adjacent_area.get_dice()
-                if enemy_dice is 1:
-                    continue
-                lose_prob = attack_succcess_probability(enemy_dice, area_dice)
-                hold_prob = 1.0 - lose_prob
-                probability *= hold_prob
-        return probability
-
-    def probability_of_successful_attack(self, atk_area, target_area):
-        atk = self.board.get_area(atk_area)
-        target = self.board.get_area(target_area)
-        atk_power = atk.get_dice()
-        def_power = target.get_dice()
-        return attack_succcess_probability(atk_power, def_power)

@@ -1,7 +1,7 @@
 from random import shuffle
 
 from ai import GenericAI
-from ai.utils import attack_succcess_probability
+from ai.utils import attack_succcess_probability, probability_of_holding_area, probability_of_successful_attack
 
 
 class AI(GenericAI):
@@ -23,10 +23,10 @@ class AI(GenericAI):
                 self.logger.debug("Possible turn: {}".format(turn))
                 atk_area = self.board.get_area(turn[0])
                 atk_power = atk_area.get_dice()
-                atk_prob = self.probability_of_successful_attack(turn[0], turn[1])
+                atk_prob = probability_of_successful_attack(self.board, turn[0], turn[1])
                 self.logger.debug("{0}->{1} attack probabiliy {2}".format(turn[0], turn[1], atk_prob))
                 if atk_prob > prob:
-                    hold_prob = self.probability_of_holding_area(turn[1], atk_power - 1)
+                    hold_prob = probability_of_holding_area(self.board, turn[1], atk_power - 1, self.player_name)
                     self.logger.debug("{0} hold probability {1}".format(turn[1], hold_prob))
                     if hold_prob > prob:
                         self.send_message('battle', attacker=turn[0], defender=turn[1])
@@ -41,8 +41,8 @@ class AI(GenericAI):
                     if atk_power is not 8:
                         continue
 
-                    atk_prob = self.probability_of_successful_attack(turn[0], turn[1])
-                    hold_prob = self.probability_of_holding_area(turn[1], atk_power - 1)
+                    atk_prob = probability_of_successful_attack(self.board, turn[0], turn[1])
+                    hold_prob = probability_of_holding_area(self.board, turn[1], atk_power - 1, self.player_name)
 
                     self.send_message('battle', attacker=turn[0], defender=turn[1])
                     self.waitingForResponse = True
@@ -65,24 +65,3 @@ class AI(GenericAI):
                         turns.append([area.get_name(), adj])
         shuffle(turns)
         return turns
-
-    def probability_of_holding_area(self, area_name, area_dice):
-        area = self.board.get_area(area_name)
-        probability = 1.0
-        for adj in area.get_adjacent_areas(self.board):
-            adjacent_area = self.board.get_area(adj)
-            if adjacent_area.get_owner_name() != self.player_name:
-                enemy_dice = adjacent_area.get_dice()
-                if enemy_dice is 1:
-                    continue
-                lose_prob = attack_succcess_probability(enemy_dice, area_dice)
-                hold_prob = 1.0 - lose_prob
-                probability *= hold_prob
-        return probability
-
-    def probability_of_successful_attack(self, atk_area, target_area):
-        atk = self.board.get_area(atk_area)
-        target = self.board.get_area(target_area)
-        atk_power = atk.get_dice()
-        def_power = target.get_dice()
-        return attack_succcess_probability(atk_power, def_power)
