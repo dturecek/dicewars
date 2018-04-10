@@ -331,8 +331,6 @@ class Game(object):
 
         self.assign_areas_to_players()
         self.assign_dice_to_players()
-        if not self.test_dice_distribution():
-            self.logger.warning("Dice distribution failed")
         self.logger.debug("Board initialized")
 
     def assign_areas_to_players(self):
@@ -370,24 +368,9 @@ class Game(object):
 
             while dice and areas:
                 area = random.choice(areas)
-                if not area.add_die(): # adding a die to area failed means that area is full
+                if not area.add_die(): # adding a die to area fails when area is full
                     areas.remove(area)
                 else:
                     dice -= 1
 
             players_processed += 1
-
-    ###############################
-    # DEVELOPMENT SUPPORT METHODS #
-    ###############################
-    def test_dice_distribution(self):
-        dice = 0
-
-        for area in self.board.areas:
-            dice += self.board.areas[area].get_dice()
-
-        if ((dice > 3 * self.board.get_number_of_areas()) - 6
-            and (dice <= 3 * self.board.get_number_of_areas())):
-            return True
-        else:
-            return False

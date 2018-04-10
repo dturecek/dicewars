@@ -122,7 +122,6 @@ class MainWindow(QWidget):
                 # area activation
                 self.activated_area_name = area.get_name()
                 self.activated_area = area
-                #self.logger.debug("activating area {}".format(self.activated_area_name))
                 self.update()
         except KeyError:
             pass

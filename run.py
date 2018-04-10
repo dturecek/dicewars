@@ -13,19 +13,6 @@ parser.add_argument('--ai', help="Specify multiple AI versions as a sequence of 
                     type=int, nargs='+')
 
 
-def kill_procs(procs):
-    for p in procs:
-        p.kill()
-
-
-def check_procs(procs):
-    for p in procs:
-        if p.poll() is not None:
-            kill_procs(procs)
-            return False
-    return True
-
-
 def main():
     args = parser.parse_args()
 
@@ -69,7 +56,7 @@ def main():
     procs[0].wait()
     for p in procs:
         p.kill()
-        
+
     sys.exit(0)
 
 
