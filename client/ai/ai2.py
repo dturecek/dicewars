@@ -22,7 +22,7 @@ class AI(GenericAI):
             for area in areas:
                 if area.get_owner_name() == self.player_name:
                     area_dice = area.get_dice()
-                    neighbours = area.get_adjacent_areas(self.board)
+                    neighbours = area.get_adjacent_areas()
                     shuffle(neighbours)
 
                     for adj in neighbours:

@@ -59,7 +59,7 @@ class AI(GenericAI):
         turns = []
         for area in self.board.areas.values():
             if area.get_owner_name() == self.player_name and area.get_dice() > 1:
-                for adj in area.get_adjacent_areas(self.board):
+                for adj in area.get_adjacent_areas():
                     adjacent_area = self.board.get_area(adj)
                     if adjacent_area.get_owner_name() != self.player_name:
                         turns.append([area.get_name(), adj])

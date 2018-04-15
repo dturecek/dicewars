@@ -17,7 +17,7 @@ class AI(GenericAI):
         shuffle(areas)
         for area in areas:
             if area.get_owner_name() == self.player_name and area.get_dice() > 1:
-                neighbours = area.get_adjacent_areas(self.board)
+                neighbours = area.get_adjacent_areas()
                 shuffle(neighbours)
                 for adj in neighbours:
                     adjacent_area = self.board.get_area(adj)

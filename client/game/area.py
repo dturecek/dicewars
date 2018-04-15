@@ -12,7 +12,7 @@ class Area(object):
         self.neighbours = [int(n) for n in neighbours]
         self.hexes = [[int(i) for i in h] for h in hexes]
 
-    def get_adjacent_areas(self, board):
+    def get_adjacent_areas(self):
         return self.neighbours
 
     def get_dice(self):

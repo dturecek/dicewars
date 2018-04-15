@@ -1,7 +1,7 @@
 def probability_of_holding_area(board, area_name, area_dice, player_name):
     area = board.get_area(area_name)
     probability = 1.0
-    for adj in area.get_adjacent_areas(board):
+    for adj in area.get_adjacent_areas():
         adjacent_area = board.get_area(adj)
         if adjacent_area.get_owner_name() != player_name:
             enemy_dice = adjacent_area.get_dice()
