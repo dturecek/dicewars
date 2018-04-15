@@ -71,7 +71,7 @@ class Player(object):
             if areas_to_test:
                 areas_in_current_region = [areas_to_test[0]]
 
-        self.areas = player_areas #TODO is this needed?
+        self.areas = player_areas
         return largest_region_size
 
     def get_name(self):
