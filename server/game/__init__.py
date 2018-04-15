@@ -363,7 +363,7 @@ class Game(object):
 
             # each area has to have at least one die
             for area in areas:
-                area.set_to_one_die()
+                area.set_dice(1)
                 dice -= 1
 
             while dice and areas:

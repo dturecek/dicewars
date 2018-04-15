@@ -50,6 +50,3 @@ class Area(object):
 
     def set_owner_name(self, name):
         self.owner_name = name
-
-    def set_to_one_die(self):
-        self.dice = 1
