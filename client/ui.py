@@ -411,7 +411,7 @@ class ClientUI(QWidget):
             else:
                 print("Player {} has won".format(msg['winner']))
             self.game.socket.close()
-            return False
+            exit(0)
 
         self.main_area.update()
         self.battle_area.update()

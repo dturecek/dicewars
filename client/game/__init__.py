@@ -119,5 +119,7 @@ class Game(object):
         """Start message collecting daemon
         """
         self.input_queue = Queue()
-        SocketListener(self.socket, self.buffer, self.input_queue).start()
+        self.socket_listener = SocketListener(self.socket, self.buffer, self.input_queue)
+        self.socket_listener.daemon = True
+        self.socket_listener.start()
         self.logger.debug("Started socket daemon.")
