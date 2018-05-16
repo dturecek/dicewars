@@ -2,23 +2,37 @@ import json
 from json.decoder import JSONDecodeError
 import logging
 
+
 class GenericAI(object):
-    def __init__(self, game, verbose):
+    """Basic AI agent implementation
+    """
+    def __init__(self, game):
+        """
+        Parameters
+        ----------
+        game : Game
+        
+        Attributes
+        ----------
+        board : Board
+        waitingForResponse : bool
+           Indicates whether agent is waiting for a response from the server 
+        """
         self.logger = logging.getLogger('AI')
         self.game = game
         self.board = game.board
         self.player_name = game.player_name
         self.waitingForResponse = False
-        self.verbose = verbose
-        self.ai_version = 0
 
     def run(self):
+        """Main AI agent loop
+        """
         game = self.game
 
         while True:
             message = game.input_queue.get(block=True, timeout=None)
             try:
-                if not self.handle_server_message(json.loads(message)):
+                if not self.handle_server_message(message):
                     exit(0)
             except JSONDecodeError:
                 self.logger.error("Invalid message from server.")
@@ -28,9 +42,18 @@ class GenericAI(object):
                 self.ai_turn()
 
     def ai_turn(self):
+        """Actual agent behaviour
+        """
         return True
 
     def handle_server_message(self, msg):
+        """Process message from the server
+
+        Parameters
+        ----------
+        msg : str
+            Message from the server
+        """
         self.logger.debug("Received message type {0}.".format(msg["type"]))
         if msg['type'] == 'battle':
             atk_data = msg['result']['atk']
@@ -52,7 +75,6 @@ class GenericAI(object):
 
         elif msg['type'] == 'end_turn':
             current_player = self.game.players[self.game.current_player_name]
-            #current_player.set_reserve(msg['reserve'])
 
             for area in msg['areas']:
                 owner_name = msg['areas'][area]['owner']
@@ -74,12 +96,17 @@ class GenericAI(object):
             self.game.socket.close()
             return False
 
-        elif msg['type'] == 'game_state' and self.verbose:
-            print("Gathering some data")
-            print(msg)
         return True
 
     def send_message(self, type, attacker=None, defender=None):
+        """Send message to the server
+
+        Parameters
+        ----------
+        type : str
+        attacker : int
+        defender : int
+        """
         if type == 'close':
             msg = {'type': 'close'}
         elif type == 'battle':
@@ -91,8 +118,6 @@ class GenericAI(object):
         elif type == 'end_turn':
             msg = {'type': 'end_turn'}
             self.logger.debug("Sending end_turn message.")
-
-        msg['ai'] = self.ai_version
 
         try:
             self.game.socket.send(str.encode(json.dumps(msg)))

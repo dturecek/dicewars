@@ -6,6 +6,9 @@ from game import Game
 
 
 def main():
+    """
+    Server for Dice Wars
+    """
     args, log_level = parse()
     logging.basicConfig(level=log_level)
     logger = logging.getLogger('SERVER')

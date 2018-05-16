@@ -10,11 +10,13 @@ from ui import ClientUI
 
 
 def main():
+    """Client side of Dice Wars
+    """
     args, log_level = parse()
     logging.basicConfig(level=log_level)
     logger = logging.getLogger('CLIENT')
 
-    game = Game(args.address, args.port, args.ai)
+    game = Game(args.address, args.port)
 
     if args.ai:
         if args.ai == 1:
@@ -25,11 +27,17 @@ def main():
             from ai.ai3 import AI
         elif args.ai == 4:
             from ai.ai4 import AI
+        elif args.ai == 5:
+            from ai.ai5 import AI
+        elif args.ai == 6:
+            from ai.ai6 import AI
+        elif args.ai == 7:
+            from ai.ai7 import AI
         else:
             logging.error("No AI version {0}.".format(args.ai))
             exit(1)
 
-        ai = AI(game, args.verbose)
+        ai = AI(game)
         ai.run()
 
     else:

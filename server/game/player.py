@@ -3,27 +3,56 @@ import socket
 
 
 class Player(object):
+    """Object representing a player
+    """
     def __init__(self, name):
+        """
+        Parameters
+        ----------
+        name : int
+            Player's name
+
+        Attributes
+        ----------
+        areas : list of Area
+            Areas belonging to the player
+        dice_reserve : int
+            Number of dice in player's reserve
+        client_addr : str
+            Client's IP address
+        client_port : int
+            Client's port number
+        socket : socket
+            Client's socket
+        """
+
         self.name = name
         self.logger = logging.getLogger('SERVER')
 
         self.areas = []
-        self.areas_not_full = []
         self.client_addr = None
         self.client_port = None
         self.socket = None
         self.dice_reserve = 0
 
     def add_area(self, area):
+        """Add area to player's areas
+        """
         if area in self.areas:
             self.logger.warning("Area {0} already belonging to player {1}."\
                                 .format(area.get_name(), self.name))
         else:
             self.areas.append(area)
-            if area.get_dice() < 8:
-                self.areas_not_full.append(area)
 
     def assign_client(self, socket, client_addr):
+        """Assign client's socket, IP address, and port number
+        
+        Parameters
+        ----------
+        socket : socket
+        client_addr : (str, int)
+            IP address and port number
+        """
         self.socket = socket
         self.client_addr = client_addr[0]
         self.client_port = client_addr[1]
@@ -32,12 +61,29 @@ class Player(object):
                                  self.name))
 
     def get_areas(self):
+        """Get areas controlled by the player
+
+        Returns
+        -------
+        list of Area
+        """
         return self.areas
 
-    def get_areas_names(self):
-        return ','.join(str(a.get_name()) for a in self.areas)
+    #def get_areas_names(self):
+    #    return ','.join(str(a.get_name()) for a in self.areas)
 
     def get_largest_region(self, board):
+        """Get player's score
+
+        Parameters
+        ----------
+        board : Board
+
+        Returns
+        -------
+        int
+            Player's score
+        """
         largest_region_size = 0
         areas_to_test = self.areas
         player_areas = []
@@ -75,33 +121,37 @@ class Player(object):
         return largest_region_size
 
     def get_name(self):
+        """Return player's name
+        """
         return self.name
 
     def get_number_of_areas(self):
+        """Return number of areas under Player's control
+        """
         return len(self.areas)
 
     def get_reserve(self):
+        """Return number of dice in Player's reserve
+        """
         return self.dice_reserve
 
     def has_client(self):
         if self.socket: return True
         else: return False
 
-    def print_areas(self):
-        self.logger.debug("Player {0} areas: {1}".format(self.name,
-            ','.join(str(a.get_name) for a in self.areas)))
-
     def remove_area(self, area):
+        """Remove area from list of areas controlled by the player
+        """
         if area not in self.areas:
             self.logger.warning("Trying to remove area {0} that doesn't\
                                 belong to player {1}".format(area.get_name(),
                                 self.name))
         else:
             self.areas.remove(area)
-        if area in self.areas_not_full:
-            self.areas_not_full.remove(area)
 
     def send_message(self, msg):
+        """Send message msg to the Player's client
+        """
         try:
             self.socket.sendall(msg.encode())
         except socket.error as e:
@@ -110,4 +160,20 @@ class Player(object):
             raise e
 
     def set_reserve(self, dice):
+        """Set dice reserve
+        """
         self.dice_reserve = dice
+
+    def total_areas(self):
+        """Return number of areas under Player's control
+        """
+        return len(self.areas)
+        
+    def total_dice(self):
+        """Return total number of Player's dice
+        """
+        td = 0
+        for area in self.areas:
+            td += area.get_dice()
+        return td
+

@@ -1,6 +1,7 @@
 import json
 from json.decoder import JSONDecodeError
 import logging
+import os
 import random
 import socket
 
@@ -10,21 +11,42 @@ from game.player import Player
 
 
 class Game(object):
+    """Instance of the game
+    """
     def __init__(self, players, addr, port):
+        """Initialize game and connect clients
+
+        Parameters
+        ----------
+        players : int
+            Number of players
+        addr : str
+            IP address of the server
+        port : int
+            Port number
+
+        Attributes
+        ----------
+        buffer : int
+            Size of socket buffer
+        number_of_players : int
+            Number of players
+        """
         self.buffer = 65535
         self.logger = logging.getLogger('SERVER')
 
         self.address = addr
         self.port = port
-
-        self.create_socket()
-
         self.number_of_players = players
 
+        self.create_socket()
         self.initialize_game()
         self.connect_clients()
 
+
     def run(self):
+        """Main loop of the game
+        """
         try:
             for i in range(1, self.number_of_players + 1):
                 player = self.players[i]
@@ -40,10 +62,8 @@ class Game(object):
             for i in range(1, self.number_of_players + 1):
                 player = self.players[i]
                 self.send_message(player, 'close_socket')
-        except BrokenPipeError as e:
+        except (BrokenPipeError, JSONDecodeError) as e:
             self.logger.error("Connection to client failed: {0}".format(e))
-        except JSONDecodeError as e:
-            print("Goodbye!")
         except ConnectionResetError:
             self.logger.error("ConnectionResetError")
 
@@ -56,25 +76,47 @@ class Game(object):
     # GAME LOGIC #
     ##############
     def assign_area(self, area, player):
+        """Assign area to a new owner
+
+        Parameters
+        ----------
+        area : Area
+            Area to be assigned new owner to
+        player : Player
+            New owner
+        """
         area.set_owner_name(player.get_name())
         player.add_area(area)
 
     def handle_player_turn(self):
+        """Handle clients message and carry out the action
+        """
         self.logger.debug("Handling player {} turn".format(self.current_player.get_name()))
         player = self.current_player.get_name()
         msg = self.get_message(player)
 
         if msg['type'] == 'battle':
+            atk_dice = self.board.get_area_by_name(msg['atk']).get_dice()
+            def_name = self.board.get_area_by_name(msg['def']).get_owner_name()
             battle = self.battle(self.board.get_area_by_name(msg['atk']), self.board.get_area_by_name(msg['def']))
             self.logger.debug("Battle result: {}".format(battle))
             for p in self.players:
                 self.send_message(self.players[p], 'battle', battle=battle)
+
         elif msg['type'] == 'end_turn':
             affected_areas = self.end_turn()
             for p in self.players:
                 self.send_message(self.players[p], 'end_turn', areas=affected_areas)
 
     def get_state(self):
+        """Get game state
+
+        Returns
+        -------
+        dict
+            Dictionary containing owner, dice and adjacent areas of 
+            each area, as well as score of each player
+        """
         game_state = {
             'areas': {}
         }
@@ -96,6 +138,15 @@ class Game(object):
         return game_state
 
     def battle(self, attacker, defender):
+        """Carry out a battle
+
+        Returns
+        -------
+        dict
+            Dictionary with the result of the battle including information
+            about rolled numbers, dice left after the battle, and possible 
+            new ownership of the areas
+        """
         atk_dice = attacker.get_dice()
         def_dice = defender.get_dice()
         atk_pwr = def_pwr = 0
@@ -143,6 +194,13 @@ class Game(object):
         return battle
 
     def end_turn(self):
+        """Handles end turn command
+        
+        Returns
+        -------
+        dict
+            Dictionary of affected areas including number of dice in these areas
+        """
         affected_areas = []
         player = self.current_player
         dice = player.get_reserve() + player.get_largest_region(self.board)
@@ -176,6 +234,8 @@ class Game(object):
         return list_of_areas
 
     def set_first_player(self):
+        """Set first player
+        """
         for player in self.players:
             if self.players[player].get_name() == self.players_order[0]:
                 self.current_player = self.players[player]
@@ -183,6 +243,8 @@ class Game(object):
                 return
 
     def set_next_player(self):
+        """Set next player in order as a current player
+        """
         current_player_name = self.current_player.get_name()
         current_idx = self.players_order.index(current_player_name)
         idx = self.players_order[(current_idx + 1) % self.number_of_players]
@@ -199,6 +261,13 @@ class Game(object):
             return
 
     def check_win_condition(self):
+        """Check win conditions
+
+        Returns
+        -------
+        bool
+            True if a player has won, False otherwise
+        """
         for p in self.players:
             player = self.players[p]
             if player.get_number_of_areas() == self.board.get_number_of_areas():
@@ -213,12 +282,39 @@ class Game(object):
     # NETWORKING #
     ##############
     def get_message(self, player):
+        """Read message from client
+
+        Parameters
+        ----------
+        player : int
+            Name of the client
+
+        Returns
+        -------
+        str
+            Decoded message from the client
+        """
         raw_message = self.client_sockets[player].recv(self.buffer)
         msg = json.loads(raw_message.decode())
         self.logger.debug("Got message from client {}; type: {}".format(player, msg['type']))
         return msg
 
     def send_message(self, client, type, battle=None, winner=None, areas=None):
+        """Send message to a client
+
+        Parameters
+        ----------
+        client : Player
+            Recepient of the message
+        type : str
+            Type of message
+        battle : dict
+            Result of a battle
+        winner : int
+            Winner of the game
+        areas : list of int
+            Areas changed during the turn
+        """
         self.logger.debug("Sending msg type '{}' to client {}".format(type, client.get_name()))
         if type == 'game_start':
             msg = self.get_state()
@@ -227,6 +323,7 @@ class Game(object):
             msg['no_players'] = self.number_of_players
             msg['current_player'] = self.current_player.get_name()
             msg['board'] = self.board.get_board()
+            msg['order'] = self.players_order
 
         elif type == 'game_state':
             msg = self.get_state()
@@ -262,6 +359,8 @@ class Game(object):
         client.send_message(msg + '\0')
 
     def create_socket(self):
+        """Initiate server socket
+        """
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -272,6 +371,8 @@ class Game(object):
             exit(1)
 
     def connect_clients(self):
+        """Connect all clients
+        """
         self.client_sockets = {}
 
         self.socket.listen(self.number_of_players)
@@ -282,11 +383,29 @@ class Game(object):
         self.logger.debug("Successfully assigned clients to all players")
 
     def connect_client(self, i):
+        """Assign client to an instance of Player
+        """
         sock, client_address = self.socket.accept()
         player = self.add_client(sock, client_address, i)
         self.send_message(player, 'game_start')
 
     def add_client(self, connection, client_address, i):
+        """Add client's socket to an instance of Player
+
+        Parameters
+        ----------
+        connection : socket
+            Client's socket
+        client_addres : (str, int)
+            Client's address and port number
+        i : int
+            Player's name
+        
+        Returns
+        -------
+        Player
+            Instance of Player that the client was assigned to
+        """
         self.client_sockets[i] = connection
         player = self.assign_player_to_client(connection, client_address)
         if not player:
@@ -295,6 +414,8 @@ class Game(object):
             return player
 
     def assign_player_to_client(self, socket, client_address):
+        """Add client's socket to an unassigned player
+        """
         player = self.get_unassigned_player()
         if player:
             player.assign_client(socket, client_address)
@@ -303,12 +424,16 @@ class Game(object):
             return False
 
     def get_unassigned_player(self):
+        """Get a player with unassigned client
+        """
         for player in self.players:
             if not self.players[player].has_client():
                 return self.players[player]
         return False
 
     def close_connections(self):
+        """Close server's socket
+        """
         self.logger.debug("Closing server socket")
         self.socket.close()
 
@@ -316,6 +441,14 @@ class Game(object):
     # INITIALIZATION #
     ##################
     def initialize_game(self):
+        """Initialization of the game
+
+        Attributes
+        ----------
+        board : Board
+        players : list of Player
+        players_order : list of int
+        """
         generator = BoardGenerator()
         self.board = Board(generator.generate_board())
 
@@ -334,6 +467,8 @@ class Game(object):
         self.logger.debug("Board initialized")
 
     def assign_areas_to_players(self):
+        """Assigns areas to players at the start of the game
+        """
         no_areas = len(self.board.areas)
         no_players = len(self.players)
         areas = list(range(1, no_areas + 1))
@@ -349,6 +484,8 @@ class Game(object):
                     return
 
     def assign_dice_to_players(self):
+        """Assigns dice to players at the start of the game
+        """
         dice_total = 3 * self.board.get_number_of_areas() - random.randint(0, 5)
         players = len(self.players)
         players_processed = 0
@@ -368,9 +505,10 @@ class Game(object):
 
             while dice and areas:
                 area = random.choice(areas)
-                if not area.add_die(): # adding a die to area fails when area is full
+                if not area.add_die(): # adding a die to area failed means that area is full
                     areas.remove(area)
                 else:
                     dice -= 1
 
             players_processed += 1
+

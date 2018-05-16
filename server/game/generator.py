@@ -3,7 +3,15 @@ from random import randint, choice as rand_choice, shuffle
 
 
 class BoardGenerator(object):
+    """Generator of game board
+    """
     def __init__(self):
+        """
+        Attributes
+        ----------
+        min_x, max_x, min_y, max_y : int
+            Boundary values for Hex coordinates
+        """
         self.min_x = -32
         self.max_x = 30
         self.min_y = -14
@@ -15,6 +23,13 @@ class BoardGenerator(object):
                 self.coordinates[i] = (self.coordinates[i][0] + 1, self.coordinates[i][1])
 
     def random_hex(self):
+        """Get random Hex from the board
+
+        Returns
+        -------
+        hexutil.Hex
+            Random hex from within the game board
+        """
         y = randint(self.min_y, self.max_y)
         while True:
             if y % 2 == 0:
@@ -26,6 +41,14 @@ class BoardGenerator(object):
         return hexutil.Hex(x, y)
 
     def generate_board(self):
+        """Method generating the board
+
+        Returns
+        -------
+        dict
+            Dictionary of areas in the game board. Contains names of adjacent 
+            areas and coordinates of the hexes of each area
+        """
         self.a = {}
         self.areas = {}
         for i in range(self.min_y, self.max_y + 1):
@@ -38,23 +61,27 @@ class BoardGenerator(object):
                     self.a[i][j] = 0
 
         for i in range(1, 30 + randint(0, 2)):
-            self.create_area(i)
-        self.add_neighbours()
+            self.__create_area(i)
+        self.__add_neighbours()
 
         return self.areas
 
-    def create_area(self, area):
+    def __create_area(self, area):
+        """Create an area from Hexes
+        """
         self.possible_hexes = []
         i = 0
         size = randint(12, 18)
         while i < size:
-            ret = self.add_hex_to_area(area)
+            ret = self.__add_hex_to_area(area)
             i += 1
             if not ret:
                 i = 0
-        self.fill_area(area)
+        self.__fill_area(area)
 
-    def fill_area(self, area):
+    def __fill_area(self, area):
+        """Fills empty Hexes inside the area
+        """
         for h in self.areas[area]['hexes']:
             for n in h.neighbours():
                 counter = 0
@@ -68,31 +95,37 @@ class BoardGenerator(object):
                     if counter > 2:
                         break
                 if counter <= 2:
-                    self.retag_neighbouring_hexes(n)
+                    self.__retag_neighbouring_hexes(n)
                     self.a[n.y][n.x] = 2
                     self.areas[area]['hexes'].append(n)
                     break
 
-    def add_hex_to_area(self, area):
+    def __add_hex_to_area(self, area):
+        """Add a single Hex to area being created
+        """
         if not self.areas:
-            return self.start_first_area()
+            return self.__start_first_area()
         elif area not in self.areas:
-            return self.start_area(area)
+            return self.__start_area(area)
         else:
-            return self.grow_area(area)
+            return self.__grow_area(area)
 
-    def start_first_area(self):
+    def __start_first_area(self):
+        """Add first Hex to first area on the board
+        """
         self.h = self.random_hex()
         self.possible_hexes.append(self.h)
         self.a[self.h.y][self.h.x] = 2
-        self.retag_neighbouring_hexes(self.h)
+        self.__retag_neighbouring_hexes(self.h)
         self.areas[1] = {
             'hexes': [self.h],
             'neighbours': []
         }
         return True
 
-    def start_area(self, area):
+    def __start_area(self, area):
+        """Add first Hex to an area
+        """
         shuffle(self.coordinates)
         for coord in self.coordinates:
             x = coord[0]
@@ -104,23 +137,25 @@ class BoardGenerator(object):
                         self.h = h
                         self.possible_hexes.append(h)
                         self.a[h.y][h.x] = 2
-                        self.retag_neighbouring_hexes(h)
+                        self.__retag_neighbouring_hexes(h)
                         self.areas[area] = {
                             'hexes': [h],
                             'neighbours': []
                         }
                         return True
 
-    def grow_area(self, area):
+    def __grow_area(self, area):
+        """Add hex to already existing area
+        """
         while True:
             if self.h != self.areas[area]['hexes'][0] or self.h not in self.possible_hexes:
                 self.h = rand_choice(self.possible_hexes)
 
-            n = self.neighbour()
+            n = self.__neighbour()
             if n:
                 self.possible_hexes.append(n)
                 self.a[n.y][n.x] = 2
-                self.retag_neighbouring_hexes(n)
+                self.__retag_neighbouring_hexes(n)
                 self.areas[area]['hexes'].append(n)
                 return True
 
@@ -130,13 +165,17 @@ class BoardGenerator(object):
                     self.areas.pop(area)
                     return False
 
-    def retag_neighbouring_hexes(self, hex):
+    def __retag_neighbouring_hexes(self, hex):
+        """Mark adjacent Hexes as neighbours to already used Hex
+        """
         for n in hex.neighbours():
             if n.y in self.a and n.x in self.a[n.y]:
                 if self.a[n.y][n.x] == 0:
                     self.a[n.y][n.x] = 1
 
-    def neighbour(self):
+    def __neighbour(self):
+        """Get random adjacent Hex
+        """
         ns = self.h.neighbours()
         shuffle(ns)
         for n in ns:
@@ -145,7 +184,9 @@ class BoardGenerator(object):
                     return n
         return False
 
-    def add_neighbours(self):
+    def __add_neighbours(self):
+        """Add neighbours of an area to the areas dict based
+        """
         for a in self.areas:
             for h in self.areas[a]['hexes']:
                 for n in h.neighbours():

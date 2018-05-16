@@ -6,10 +6,13 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QLabel
 from PyQt5.QtGui import QPainter, QColor, QPolygon, QPen, QBrush, QFont
 from PyQt5.QtCore import QPoint, Qt, QRectF, QTimer
 from random import randint
+from time import sleep
 import sys
 
 
 def player_color(player_name):
+    """Return color of a player given his name
+    """
     return {
         1 : (0, 255, 0),
         2 : (0, 0, 255),
@@ -23,7 +26,14 @@ def player_color(player_name):
 
 
 class MainWindow(QWidget):
+    """Main window of the GUI containing the game board
+    """
     def __init__(self, game):
+        """
+        Parameters
+        ----------
+        game : Game
+        """
         self.logger = logging.getLogger('GUI')
         super(MainWindow, self).__init__()
         self.qp = QPainter()
@@ -47,6 +57,8 @@ class MainWindow(QWidget):
         self.qp.end()
 
     def draw_areas(self):
+        """Draw areas in the game board
+        """
         if self.game.draw_battle:
             self.activated_area_name = None
             self.game.draw_battle = False
@@ -127,6 +139,8 @@ class MainWindow(QWidget):
             pass
 
     def get_hex(self, position):
+        """Return coordinates of a Hex from the given pixel position
+        """
         size = self.size()
         x = size.width()//2
         y = size.height()//2
@@ -135,6 +149,8 @@ class MainWindow(QWidget):
 
 
 class Battle(QWidget):
+    """Widget for displaying battle results
+    """
     def __init__(self, game):
         super(Battle, self).__init__()
         self.game = game
@@ -151,6 +167,8 @@ class Battle(QWidget):
         self.qp.end()
 
     def draw_battle(self, event):
+        """Draw battle results
+        """
         rect = event.rect()
         label_rect = QRectF(rect.x(), rect.y(), rect.width(), 25)
 
@@ -188,6 +206,8 @@ class Battle(QWidget):
 
 
 class Score(QWidget):
+    """Widget showing players' scores and dice reserves
+    """
     def __init__(self, game):
         super(Score, self).__init__()
         self.game = game
@@ -205,6 +225,8 @@ class Score(QWidget):
         self.qp.end()
 
     def draw_scores(self, event):
+        """Redraw scores and reserves
+        """
         rect = event.rect()
         label_rect = QRectF(rect.x(), rect.y(), rect.width(), 25)
 
@@ -231,11 +253,13 @@ class Score(QWidget):
             self.qp.setPen(self.color)
             self.qp.setFont(self.font)
             self.qp.drawText(player_score_rect, Qt.AlignCenter, str(p.get_score()))
+
             self.qp.setFont(QFont('Helvetica', 8))
             self.qp.drawText(reserve_rect, Qt.AlignCenter, str(p.get_reserve()))
 
-
 class StatusArea(QWidget):
+    """Status area showing current player
+    """
     def __init__(self, game):
         super(StatusArea, self).__init__()
         self.game = game
@@ -256,7 +280,14 @@ class StatusArea(QWidget):
 
 
 class ClientUI(QWidget):
+    """Dice Wars' graphical user interface
+    """
     def __init__(self, game):
+        """
+        Parameters
+        ----------
+        game : Game
+        """
         super(ClientUI, self).__init__()
         self.logger = logging.getLogger('GUI')
         self.game = game
@@ -285,7 +316,7 @@ class ClientUI(QWidget):
         self.score_area = Score(self.game)
         self.status_area = StatusArea(self.game)
         self.end_turn = QPushButton('End turn')
-        self.end_turn.clicked.connect(self.handle_button_end_turn)
+        self.end_turn.clicked.connect(self.handle_end_turn_button)
 
         if self.game.player_name == self.game.current_player.get_name():
             self.end_turn.setEnabled(True)
@@ -300,20 +331,24 @@ class ClientUI(QWidget):
 
         self.setLayout(grid)
 
-    def handle_button_end_turn(self):
+    def handle_end_turn_button(self):
         self.game.send_message('end_turn')
 
     def check_socket(self):
+        """Check server message queue for incoming messages
+        """
         if not self.game.input_queue.empty():
             event = self.game.input_queue.get()
             if not self.handle_server_message(event):
                 self.logger.debug('Game has ended.')
 
     def handle_server_message(self, event):
+        """Handle event associated to message from server
+        """
         self.game.draw_battle = False
 
         try:
-            msg = json.loads(event)
+            msg = event
         except JSONDecodeError as e:
             self.logger.debug(e)
             self.logger.debug('msg = {}'.format(event))

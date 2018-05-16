@@ -5,49 +5,42 @@ from ai.utils import attack_succcess_probability, probability_of_holding_area, p
 
 
 class AI(GenericAI):
-    """Single turn expectiminimax v0.
+    """Agent using Single Turn Expectiminimax (STE) strategy
 
-    This AI checks the probability of attack and then the probability to hold
-    a territory through next player's turn.
+    This agent makes such moves that have a probability of successful
+    attack and hold over the area until next turn higher than 20 %.
     """
-    def __init__(self, game, verbose):
-        super(AI, self).__init__(game, verbose)
-        self.ai_version = 3
+    def __init__(self, game):
+        """
+        Parameters
+        ----------
+        game : Game
+        """
+        super(AI, self).__init__(game)
 
     def ai_turn(self):
+        """AI agent's turn
+
+        Agent gets a list preferred moves and makes such move that has the 
+        highest estimated hold probability. If there is no such move, the agent
+        ends it's turn.
+        """
         self.logger.debug("Looking for possible turns.")
         turns = self.possible_turns()
-        prob = 0.7
-        while True:
-            for turn in turns:
-                self.logger.debug("Possible turn: {}".format(turn))
-                atk_area = self.board.get_area(turn[0])
-                atk_power = atk_area.get_dice()
-                atk_prob = probability_of_successful_attack(self.board, turn[0], turn[1])
-                self.logger.debug("{0}->{1} attack probabiliy {2}".format(turn[0], turn[1], atk_prob))
-                if atk_prob > prob:
-                    hold_prob = probability_of_holding_area(self.board, turn[1], atk_power - 1, self.player_name)
-                    self.logger.debug("{0} hold probability {1}".format(turn[1], hold_prob))
-                    if hold_prob > prob:
-                        self.send_message('battle', attacker=turn[0], defender=turn[1])
-                        self.waitingForResponse = True
-                        return True
 
-            prob -= 0.1
-            if prob < 0.2:
-                for turn in turns:
-                    atk_area = self.board.get_area(turn[0])
-                    atk_power = atk_area.get_dice()
-                    if atk_power is not 8:
-                        continue
+        if turns:
+            turn = turns[0]
+            area_name = turn[0]
+            self.logger.debug("Possible turn: {}".format(turn))
+            atk_area = self.board.get_area(area_name)
+            atk_power = atk_area.get_dice()
+            hold_prob = turn[2]
+            self.logger.debug("{0}->{1} attack and hold probabiliy {2}".format(area_name, turn[1], hold_prob))
 
-                    atk_prob = probability_of_successful_attack(self.board, turn[0], turn[1])
-                    hold_prob = probability_of_holding_area(self.board, turn[1], atk_power - 1, self.player_name)
+            self.send_message('battle', attacker=area_name, defender=turn[1])
+            self.waitingForResponse = True
+            return True
 
-                    self.send_message('battle', attacker=turn[0], defender=turn[1])
-                    self.waitingForResponse = True
-                    return True
-                break
 
         self.logger.debug("No more plays.")
         self.send_message('end_turn')
@@ -56,12 +49,23 @@ class AI(GenericAI):
         return True
 
     def possible_turns(self):
+        """Get a list of preferred moves
+
+        This list is sorted with respect to hold probability in descending order.
+        It includes all moves that either have hold probability higher or equal to 20 %
+        or have strength of eight dice.
+        """
         turns = []
         for area in self.board.areas.values():
             if area.get_owner_name() == self.player_name and area.get_dice() > 1:
                 for adj in area.get_adjacent_areas():
                     adjacent_area = self.board.get_area(adj)
                     if adjacent_area.get_owner_name() != self.player_name:
-                        turns.append([area.get_name(), adj])
-        shuffle(turns)
-        return turns
+                        area_name = area.get_name()
+                        atk_power = area.get_dice()
+                        atk_prob = probability_of_successful_attack(self.board, area_name, adj)
+                        hold_prob = atk_prob * probability_of_holding_area(self.board, adj, atk_power - 1, self.player_name)
+                        if hold_prob >= 0.2 or atk_power is 8:
+                            turns.append([area_name, adj, hold_prob])
+
+        return sorted(turns, key=lambda turn: turn[2], reverse=True)

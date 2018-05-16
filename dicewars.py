@@ -5,15 +5,24 @@ from time import sleep
 from threading import Timer
 
 from argparse import ArgumentParser
+
+
 parser = ArgumentParser(prog='Dice_Wars')
-parser.add_argument('-n', '--number-of-players', help="Number of players", type=int, default=2)
+parser.add_argument('-n', '--number-of-players', help="Number of players.", type=int, default=2)
 parser.add_argument('-p', '--port', help="Server port", type=int, default=5005)
 parser.add_argument('-a', '--address', help="Server address", default='127.0.0.1')
-parser.add_argument('--ai', help="Specify multiple AI versions as a sequence of ints.",
+parser.add_argument('--ai', help="Specify AI versions as a sequence of ints.",
                     type=int, nargs='+')
 
 
 def main():
+    """
+    Run the Dice Wars game.
+
+    Example:
+        ./dicewars.py -n 4 --ai 4 2 1 
+        # runs a four-player game with AIs 4, 2, and 1
+    """
     args = parser.parse_args()
 
     ai_versions = [1] * (args.number_of_players - 1)
