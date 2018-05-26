@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import sys
 from signal import signal, SIGCHLD
 from subprocess import Popen
